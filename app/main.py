@@ -1,9 +1,3 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-# app/main.py
-
 from app.utils.music_theory import get_scale_notes, get_diatonic_chords
 
 def main(root_note="C", mode="double harmonic minor"):
