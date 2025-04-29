@@ -141,5 +141,6 @@ if __name__ == "__main__":
     print(f"Mode: {result['mode']}")
     print(f"Pedal Tone: {result['pedal_tone']}")
     print("Progression:")
-    for idx, chord in enumerate(result['progression']):
-        print(f"{idx+1}: {chord.commonName} -> {chord.notes}")
+    for idx, chord_obj in enumerate(result['progression']):
+        note_names = [n.nameWithOctave for n in chord_obj.notes]
+        print(f"{idx+1}: {chord_obj.commonName} -> {', '.join(note_names)}")
