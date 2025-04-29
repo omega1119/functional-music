@@ -12,7 +12,7 @@ def save_progression_as_midi(progression, root_note, mode, mood, pedal_tone=None
         root_note (str): Root note of the progression.
         mode (str): Mode name used.
         mood (str): Mood category.
-        pedal_tone (str, optional): If specified, add a separate bass track for the pedal tone.
+        pedal_tone (str or list, optional): Single note or list of pedal tones for each chord.
         filename (str, optional): Custom filename. If None, auto-generate based on mood/root/mode/timestamp.
         bpm (int): Tempo in beats per minute.
         note_length (float): Duration of each chord in quarter notes.
@@ -33,13 +33,20 @@ def save_progression_as_midi(progression, root_note, mode, mood, pedal_tone=None
     s.append(chord_part)
 
     if pedal_tone:
-        # Create repeated pedal notes
-        pedal_pitch = pitch.Pitch(pedal_tone)
-
-        for _ in progression:
-            pedal_note = note.Note(pedal_pitch)
-            pedal_note.duration.quarterLength = note_length
-            pedal_part.append(pedal_note)
+        # If a list of tones, evolve pedal tone over time
+        if isinstance(pedal_tone, list):
+            for pt in pedal_tone:
+                pedal_pitch = pitch.Pitch(pt)
+                pedal_note = note.Note(pedal_pitch)
+                pedal_note.duration.quarterLength = note_length
+                pedal_part.append(pedal_note)
+        else:
+            # Single repeating pedal tone
+            pedal_pitch = pitch.Pitch(pedal_tone)
+            for _ in progression:
+                pedal_note = note.Note(pedal_pitch)
+                pedal_note.duration.quarterLength = note_length
+                pedal_part.append(pedal_note)
 
         s.append(pedal_part)
 
@@ -72,5 +79,5 @@ if __name__ == "__main__":
         root_note=result['root_note'],
         mode=result['mode'],
         mood=mood,
-        pedal_tone=result['pedal_tone']
+        pedal_tone=result['pedal_tone_sequence']
     )

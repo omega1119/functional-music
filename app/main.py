@@ -17,7 +17,6 @@
 from app.modules.composition.ambient_phrase_builder import generate_ambient_progression
 from app.modules.export.midi_exporter import save_progression_as_midi
 
-
 mood = "calm"
 result = generate_ambient_progression("C", mood, length=6, seed=5, pedal_tone="auto")
 save_progression_as_midi(
@@ -25,5 +24,5 @@ save_progression_as_midi(
     root_note=result['root_note'],
     mode=result['mode'],
     mood=mood,
-    pedal_tone=result['pedal_tone']
+    pedal_tone=result['pedal_tone_sequence']
 )

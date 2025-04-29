@@ -109,29 +109,34 @@ def generate_ambient_progression(
     if use_extensions:
         progression = [add_chord_extension(ch, rng) for ch in progression]
 
-    final_pedal_tone = None
-
+    pedal_tone_sequence = []
     if pedal_tone is not None:
         if pedal_tone == "auto":
-            candidate_indices = [0, 3, 4] if len(scale_notes) > 4 else [0]
-            idx = rng.choice(candidate_indices)
-            base_tone = scale_notes[idx]
+            candidate_indices = [0, 1, 3, 4, 5] if len(scale_notes) > 5 else [0]
+            current_base = scale_notes[random.choice(candidate_indices)]
 
-            if hasattr(base_tone, 'name'):
-                base_tone = base_tone.name
-            elif isinstance(base_tone, str):
-                base_tone = base_tone.strip('0123456789')
+            if hasattr(current_base, 'name'):
+                current_base = current_base.name
+            elif isinstance(current_base, str):
+                current_base = current_base.strip('0123456789')
 
-            chosen_octave = rng.choice([2, 3])
-            final_pedal_tone = f"{base_tone}{chosen_octave}"
+            for _ in range(length):
+                if rng.random() < 0.3:
+                    current_base = scale_notes[random.choice(candidate_indices)]
+                    if hasattr(current_base, 'name'):
+                        current_base = current_base.name
+                    elif isinstance(current_base, str):
+                        current_base = current_base.strip('0123456789')
+                octave = rng.choice([2, 3])
+                pedal_tone_sequence.append(f"{current_base}{octave}")
         else:
-            final_pedal_tone = pedal_tone
+            pedal_tone_sequence = [pedal_tone] * length
 
     return {
         "root_note": root_note,
         "mode": mode,
         "progression": progression,
-        "pedal_tone": final_pedal_tone
+        "pedal_tone_sequence": pedal_tone_sequence
     }
 
 if __name__ == "__main__":
@@ -139,7 +144,7 @@ if __name__ == "__main__":
     result = generate_ambient_progression("C", mood, length=6, seed=5, pedal_tone="auto")
     print(f"Root: {result['root_note']}")
     print(f"Mode: {result['mode']}")
-    print(f"Pedal Tone: {result['pedal_tone']}")
+    print(f"Pedal Tone Sequence: {', '.join(result['pedal_tone_sequence'])}")
     print("Progression:")
     for idx, chord_obj in enumerate(result['progression']):
         note_names = [n.nameWithOctave for n in chord_obj.notes]
