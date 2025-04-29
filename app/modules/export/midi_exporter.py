@@ -1,30 +1,47 @@
-from music21 import stream, midi, tempo, metadata
+from music21 import stream, midi, tempo, note, pitch
 import datetime
 import os
+import copy
 
-def save_progression_as_midi(progression, root_note, mode, mood, filename=None, bpm=60, note_length=4.0, output_dir="."):
+def save_progression_as_midi(progression, root_note, mode, mood, pedal_tone=None, filename=None, bpm=60, note_length=4.0, output_dir="."):
     """
-    Save a chord progression as a MIDI file with descriptive naming.
+    Save a chord progression and optional pedal tone as a multi-track MIDI file.
 
     Args:
         progression (list): List of music21 Chord objects.
         root_note (str): Root note of the progression.
         mode (str): Mode name used.
         mood (str): Mood category.
+        pedal_tone (str, optional): If specified, add a separate bass track for the pedal tone.
         filename (str, optional): Custom filename. If None, auto-generate based on mood/root/mode/timestamp.
         bpm (int): Tempo in beats per minute.
         note_length (float): Duration of each chord in quarter notes.
         output_dir (str): Directory to save the output MIDI file.
     """
     s = stream.Score()
-    p = stream.Part()
-    p.append(tempo.MetronomeMark(number=bpm))
+    chord_part = stream.Part()
+    pedal_part = stream.Part()
+    chord_part.append(tempo.MetronomeMark(number=bpm))
+    pedal_part.append(tempo.MetronomeMark(number=bpm))
 
+    # Add chords to chord part
     for ch in progression:
-        ch.duration.quarterLength = note_length
-        p.append(ch)
+        ch_copy = copy.deepcopy(ch)
+        ch_copy.duration.quarterLength = note_length
+        chord_part.append(ch_copy)
 
-    s.append(p)
+    s.append(chord_part)
+
+    if pedal_tone:
+        # Create repeated pedal notes
+        pedal_pitch = pitch.Pitch(pedal_tone)
+
+        for _ in progression:
+            pedal_note = note.Note(pedal_pitch)
+            pedal_note.duration.quarterLength = note_length
+            pedal_part.append(pedal_note)
+
+        s.append(pedal_part)
 
     if filename is None:
         now = datetime.datetime.now().strftime("%Y%m%d_%H%M")
@@ -42,17 +59,18 @@ def save_progression_as_midi(progression, root_note, mode, mood, filename=None, 
     mf.open(filepath, 'wb')
     mf.write()
     mf.close()
-    print(f"🎶 Saved MIDI file: {filepath}")
+    print(f"🎶 Saved multi-track MIDI file: {filepath}")
 
 # Example standalone usage
 if __name__ == "__main__":
     from app.modules.composition.ambient_phrase_builder import generate_ambient_progression
 
     mood = "calm"
-    result = generate_ambient_progression("C", mood, length=6)
+    result = generate_ambient_progression("C", mood, length=6, seed=5, pedal_tone="auto")
     save_progression_as_midi(
         progression=result['progression'],
         root_note=result['root_note'],
         mode=result['mode'],
-        mood=mood
+        mood=mood,
+        pedal_tone=result['pedal_tone']
     )

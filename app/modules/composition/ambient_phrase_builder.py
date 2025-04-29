@@ -73,22 +73,17 @@ def weighted_chord_selection(chords, preferred_degrees, length, rng=None, smooth
 
     return result
 
-def apply_pedal_tone(progression, tone="D4"):
-    pedal = pitch.Pitch(tone)
-    new_progression = []
+def ensure_start_end_chords(progression, chords, start_idx=0, end_idx=0):
+    if progression:
+        progression[0] = chords[start_idx]
+        progression[-1] = chords[end_idx]
+    return progression
 
-    for ch in progression:
-        if isinstance(ch, chord.Chord):
-            pitches = list(ch.pitches)
-        else:
-            pitches = [pitch.Pitch(p) for p in ch]
-
-        new_chord = chord.Chord(pitches + [pedal])
-        new_progression.append(new_chord)
-
-    return new_progression
-
-def generate_ambient_progression(root_note, mood, length=4, seed=None, use_extensions=True, pedal_tone="D4"):
+def generate_ambient_progression(
+    root_note, mood, length=4, seed=None,
+    use_extensions=True, pedal_tone="auto",
+    force_start_end=True
+):
     rng = random.Random(seed) if seed is not None else random
 
     mode = pick_mode_for_mood(mood, rng)
@@ -108,22 +103,43 @@ def generate_ambient_progression(root_note, mood, length=4, seed=None, use_exten
 
     progression = weighted_chord_selection(chords, preferred_degrees, length, rng)
 
+    if force_start_end:
+        progression = ensure_start_end_chords(progression, chords, start_idx=0, end_idx=0)
+
     if use_extensions:
         progression = [add_chord_extension(ch, rng) for ch in progression]
 
-    if pedal_tone:
-        progression = apply_pedal_tone(progression, tone=pedal_tone)
+    final_pedal_tone = None
+
+    if pedal_tone is not None:
+        if pedal_tone == "auto":
+            candidate_indices = [0, 3, 4] if len(scale_notes) > 4 else [0]
+            idx = rng.choice(candidate_indices)
+            base_tone = scale_notes[idx]
+
+            if hasattr(base_tone, 'name'):
+                base_tone = base_tone.name
+            elif isinstance(base_tone, str):
+                base_tone = base_tone.strip('0123456789')
+
+            chosen_octave = rng.choice([2, 3])
+            final_pedal_tone = f"{base_tone}{chosen_octave}"
+        else:
+            final_pedal_tone = pedal_tone
 
     return {
         "root_note": root_note,
         "mode": mode,
-        "progression": progression
+        "progression": progression,
+        "pedal_tone": final_pedal_tone
     }
 
 if __name__ == "__main__":
-    result = generate_ambient_progression("C", "mysterious", length=6, seed=42)
+    mood = "calm"
+    result = generate_ambient_progression("C", mood, length=6, seed=5, pedal_tone="auto")
     print(f"Root: {result['root_note']}")
     print(f"Mode: {result['mode']}")
+    print(f"Pedal Tone: {result['pedal_tone']}")
     print("Progression:")
     for idx, chord in enumerate(result['progression']):
         print(f"{idx+1}: {chord.commonName} -> {chord.notes}")
